@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>หลังร้าน · ระบบสะสมแต้ม</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <!-- ===== Login ===== -->
+  <section id="loginView" class="login" hidden>
+    <form id="loginForm" class="login-card" autocomplete="off">
+      <div class="login-logo">☕</div>
+      <h1 id="loginTitle">หลังร้าน</h1>
+      <p class="muted">ใส่ PIN พนักงานหรือแอดมิน</p>
+      <input id="pinInput" class="pin-input" type="password" inputmode="numeric" placeholder="••••••" required>
+      <label class="check"><input id="rememberPin" type="checkbox"> จำ PIN บนเครื่องนี้ (เครื่องเคาน์เตอร์)</label>
+      <div class="error" id="loginError"></div>
+      <button class="btn btn-primary btn-block" id="loginBtn" type="submit">เข้าสู่ระบบ</button>
+    </form>
+  </section>
+
+  <!-- ===== App shell ===== -->
+  <div id="appView" hidden>
+    <header class="topbar">
+      <div class="brand"><span class="brand-dot">☕</span><span id="shopName">หลังร้าน</span></div>
+      <nav class="tabs" id="tabs">
+        <a href="#/counter" data-view="counter">เคาน์เตอร์</a>
+        <a href="#/dashboard" data-view="dashboard" data-admin>ภาพรวม</a>
+        <a href="#/members" data-view="members" data-admin>สมาชิก</a>
+        <a href="#/rewards" data-view="rewards" data-admin>ของรางวัล</a>
+      </nav>
+      <div class="who">
+        <span class="role-badge" id="roleBadge"></span>
+        <button class="btn btn-ghost btn-sm" id="logoutBtn">ออกจากระบบ</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <!-- เคาน์เตอร์ -->
+      <section id="view-counter" class="view" hidden>
+        <div class="counter">
+          <div id="counterForm">
+            <div class="seg" role="tablist">
+              <button class="seg-btn active" data-mode="EARN">สะสมแต้ม</button>
+              <button class="seg-btn" data-mode="REDEEM">แลกรางวัล</button>
+            </div>
+            <div class="card" id="earnPanel">
+              <label for="amountInput" class="label">ยอดชำระ (บาท)</label>
+              <input id="amountInput" class="amount-input" type="number" inputmode="decimal" min="0" step="1" placeholder="0">
+              <div class="preview" id="preview"></div>
+              <div class="error" id="earnError"></div>
+              <button class="btn btn-primary btn-block btn-lg" id="earnBtn" disabled>สร้าง QR สะสมแต้ม</button>
+            </div>
+            <div class="card" id="redeemPanel" hidden>
+              <div class="label">เลือกของรางวัลที่ลูกค้าต้องการแลก</div>
+              <div id="redeemList" class="reward-picks"></div>
+              <div class="error" id="redeemError"></div>
+            </div>
+          </div>
+
+          <div class="card qr-card" id="qrPanel" hidden>
+            <div class="qr-title" id="qrTitle"></div>
+            <div class="muted" id="qrSub"></div>
+            <div id="qrBox" class="qr-box"></div>
+            <ol class="qr-steps">
+              <li>ลูกค้าสแกน QR ด้วยแอป LINE หรือกล้องมือถือ</li>
+              <li>LINE จะเปิดแชทร้านพร้อมข้อความให้ ลูกค้ากด <b>ส่ง</b></li>
+            </ol>
+            <div class="muted" id="countdown"></div>
+            <div class="status status-wait" id="qrStatus">รอลูกค้าสแกน…</div>
+            <button class="btn btn-outline btn-block btn-lg" id="newBtn">รายการใหม่</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ภาพรวม -->
+      <section id="view-dashboard" class="view" hidden>
+        <div class="view-head">
+          <h2>ภาพรวม</h2>
+          <div class="seg seg-sm" id="rangeSeg">
+            <button class="seg-btn" data-days="7">7 วัน</button>
+            <button class="seg-btn active" data-days="14">14 วัน</button>
+            <button class="seg-btn" data-days="30">30 วัน</button>
+          </div>
+        </div>
+        <div id="dashBody"><div class="loading">กำลังโหลด…</div></div>
+      </section>
+
+      <!-- สมาชิก -->
+      <section id="view-members" class="view" hidden>
+        <div class="view-head">
+          <h2>สมาชิก <span class="muted" id="memberCount"></span></h2>
+          <div class="toolbar">
+            <input id="memberSearch" class="input" type="search" placeholder="ค้นหาชื่อหรือ userId">
+            <select id="memberSort" class="input">
+              <option value="lastVisit">มาล่าสุด</option>
+              <option value="balance">แต้มมากสุด</option>
+              <option value="spent">ยอดซื้อมากสุด</option>
+              <option value="joined">สมัครล่าสุด</option>
+            </select>
+          </div>
+        </div>
+        <div class="card card-flush">
+          <table class="table">
+            <thead><tr><th>ชื่อ</th><th class="num">แต้มคงเหลือ</th><th class="num">ยอดซื้อสะสม</th><th>มาล่าสุด</th><th>สมัครเมื่อ</th></tr></thead>
+            <tbody id="memberRows"></tbody>
+          </table>
+        </div>
+        <div class="pager" id="memberPager"></div>
+      </section>
+
+      <!-- ของรางวัล -->
+      <section id="view-rewards" class="view" hidden>
+        <div class="view-head">
+          <h2>ของรางวัล</h2>
+          <button class="btn btn-primary" id="addRewardBtn">+ เพิ่มรางวัล</button>
+        </div>
+        <div class="card card-flush">
+          <table class="table">
+            <thead><tr><th>รหัส</th><th>ชื่อรางวัล</th><th class="num">แต้มที่ใช้แลก</th><th>สถานะ</th><th></th></tr></thead>
+            <tbody id="rewardRows"></tbody>
+          </table>
+        </div>
+        <p class="muted small">ปิดรางวัลแล้วลูกค้าจะไม่เห็นในแชท และพนักงานเลือกแลกไม่ได้ ข้อมูลการแลกเก่ายังอยู่ครบ</p>
+      </section>
+    </main>
+  </div>
+
+  <!-- รายละเอียดสมาชิก -->
+  <dialog id="memberDialog" class="dialog">
+    <div class="dialog-head">
+      <div>
+        <h3 id="mdName"></h3>
+        <div class="muted small mono" id="mdId"></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" data-close>ปิด</button>
+    </div>
+    <div class="stat-row" id="mdStats"></div>
+    <form id="adjustForm" class="adjust">
+      <div class="label">ปรับแต้มเอง</div>
+      <div class="adjust-row">
+        <select id="adjSign" class="input"><option value="1">เพิ่ม</option><option value="-1">หัก</option></select>
+        <input id="adjPoints" class="input" type="number" min="1" step="1" placeholder="จำนวนแต้ม" required>
+        <input id="adjNote" class="input grow" type="text" maxlength="80" placeholder="เหตุผล เช่น ลืมสแกน บิล #123" required>
+        <button class="btn btn-primary" type="submit">บันทึก</button>
+      </div>
+      <div class="error" id="adjError"></div>
+    </form>
+    <div class="label">ประวัติ (ล่าสุด 100 รายการ)</div>
+    <div class="dialog-scroll">
+      <table class="table table-sm">
+        <thead><tr><th>เวลา</th><th>รายการ</th><th class="num">ยอด (บาท)</th><th class="num">แต้ม</th></tr></thead>
+        <tbody id="mdHistory"></tbody>
+      </table>
+    </div>
+  </dialog>
+
+  <!-- เพิ่ม/แก้ของรางวัล -->
+  <dialog id="rewardDialog" class="dialog dialog-sm">
+    <form id="rewardForm">
+      <div class="dialog-head">
+        <h3 id="rwTitle">เพิ่มรางวัล</h3>
+        <button class="btn btn-ghost btn-sm" type="button" data-close>ปิด</button>
+      </div>
+      <input type="hidden" id="rwId">
+      <label class="label" for="rwName">ชื่อรางวัล</label>
+      <input id="rwName" class="input" type="text" maxlength="60" required>
+      <label class="label" for="rwCost">แต้มที่ใช้แลก</label>
+      <input id="rwCost" class="input" type="number" min="1" step="1" required>
+      <label class="label" for="rwImage">ลิงก์รูป (ไม่ใส่ก็ได้)</label>
+      <input id="rwImage" class="input" type="url" placeholder="https://...">
+      <label class="check"><input id="rwActive" type="checkbox" checked> เปิดให้แลก</label>
+      <div class="error" id="rwError"></div>
+      <button class="btn btn-primary btn-block" type="submit">บันทึก</button>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/counter.js"></script>
+  <script src="/js/dashboard.js"></script>
+  <script src="/js/members.js"></script>
+  <script src="/js/rewards.js"></script>
+  <script>App.start();</script>
+</body>
+</html>
